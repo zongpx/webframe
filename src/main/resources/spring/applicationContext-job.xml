@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans>
+	<!-- task任务扫描注解 -->
+	<task:annotation-driven />
+	<task:scheduled-tasks>
+		<!-- 数据报表定时邮件发送 -->
+		<task:scheduled ref="dataCenterMain" method="makeRpt"
+			cron="0 0 1 * * ?" />
+		<!-- 自动好评 -->
+		<task:scheduled ref="OrderTaskService" method="autoOrderCommentaryWithTrans"
+			cron="0 0 2 * * ?" />
+	</task:scheduled-tasks>
+</beans>

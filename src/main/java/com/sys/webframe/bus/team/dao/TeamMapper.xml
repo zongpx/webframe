@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yc.rm.caas.appserver.bus.dao.team.ITeamDao">
+
+	<select id="selectTeamIdByUser" parameterType="int" resultType="int">
+		select id from cf_team
+		where leader_id=#{userId}
+	</select>
+	<!-- 某团队下关联的小区列表 -->
+	<select id="selectAreaListByTeam" parameterType="int"
+		resultType="com.yc.rm.caas.appserver.model.house.Group">
+		select g.id groupId,group_name groupName
+		from cf_team_rel_area
+		t,yc_group_tab g
+		where t.area_id=g.id
+		and t.team_id=#{teamId}
+	</select>
+	<!-- 未关联团队的小区列表 -->
+	<select id="selectAreaList" parameterType="int"
+		resultType="com.yc.rm.caas.appserver.model.house.Group">
+		select id groupId,group_name groupName
+		from yc_group_tab
+		where id not
+		in(select area_id from cf_team_rel_area
+		where
+		team_id=#{teamId})
+	</select>
+	<!-- 某团队下该用户未关联的小区列表 -->
+	<select id="selectAreaByTeam" parameterType="int"
+		resultType="com.yc.rm.caas.appserver.model.house.Group">
+		select g.group_name groupName,g.id grouId
+		from yc_group_tab
+		g,cf_team_rel_area a
+		where a.area_id=g.id
+		and a.team_id=#{teamId}
+		and
+		a.area_id
+		not in(select area_id from
+		cf_team_member_area
+		where
+		user_id=#{memberId}
+		)
+	</select>
+	<!-- 用户名下关联的小区列表 -->
+	<select id="selectAreaByUser" parameterType="int"
+		resultType="com.yc.rm.caas.appserver.model.house.Group">
+		select g.group_name groupName,g.id groupId
+		from yc_group_tab
+		g,cf_team_member_area m
+		where g.id=m.area_id and m.user_id=#{memberId}
+	</select>
+	<select id="selectPlatFormAdmin" parameterType="int" resultType="int">
+		select count(1) from cf_userrole
+		where user_id=#{userId} and role_id=1
+	</select>
+	<select id="selectUserList"
+		parameterType="com.yc.rm.caas.appserver.bus.controller.team.fo.TeamSelectFo"
+		resultType="com.yc.rm.caas.appserver.model.user.User">
+		select DISTINCT r.user_id userId,a.name userName,team_id
+		teamId
+		from
+		cf_team_rel
+		r,yc_account_tab a
+		where top_teamid=#{topTeamId}
+		and team_id
+		is null
+		and r.user_id=a.id
+	</select>
+	<select id="selectUserListByTeam"
+		parameterType="com.yc.rm.caas.appserver.bus.controller.team.fo.TeamSelectFo"
+		resultType="com.yc.rm.caas.appserver.model.user.User">
+		select DISTINCT r.user_id userId,a.name userName,team_id
+		teamId
+		from
+		cf_team_rel
+		r,yc_account_tab a
+		where top_teamid=#{topTeamId}
+		and team_id
+		=#{teamId}
+		and r.user_id=a.id
+	</select>
+	<select id="selectTeamInfo"
+		parameterType="com.yc.rm.caas.appserver.bus.controller.team.fo.TeamSelectFo"
+		resultType="com.yc.rm.caas.appserver.model.team.TeamBean">
+		select t.id teamId,t.name teamName,team_level teamLevel,a.name
+		leaderName,a.id leaderId,parent_teamid parentTeamId
+		from cf_team
+		t,yc_account_tab a
+		<where>
+			<!-- 团队负责人通过userId显示自己所在的团队，平台管理员显示一级团队 -->
+			<if test="ifAdmin==1">
+				leader_id=#{userId}
+			</if>
+			<if test="ifAdmin==2">
+				and parent_teamid=0
+			</if>
+			<!-- 是否查询子团队信息 -->
+			<if test="ifSubTeam==1">
+				and parent_teamid=#{teamId}
+			</if>
+			<!-- 通过团队id查询本团队信息 -->
+			<if test="ifSelf==1">
+				and t.id=#{teamId}
+			</if>
+			<if test="1==1">
+				and t.is_delete=0
+				and a.id=t.leader_id
+			</if>
+		</where>
+		limit #{startPage},#{pageSize}
+	</select>
+	<select id="selectMemberListById" parameterType="int"
+		resultType="com.yc.rm.caas.appserver.model.team.TeamRelation">
+		select a.id memberId,a.name memberName,if_charge
+		ifCharge,top_teamid topTeamId
+		from
+		cf_team_rel
+		r,yc_account_tab a
+		where
+		team_id=#{teamId}
+		and
+		r.user_id=a.id
+		and
+		r.team_id is not null
+	</select>
+	<!-- 团队是否关联小区判断 -->
+	<select id="selectIfRelArea" parameterType="int" resultType="int">
+		select count(1)
+		from
+		cf_team_rel_area
+		where team_id=#{teamId}
+	</select>
+	<!-- 关联房源的数量 -->
+	<select id="selectHouseCnt" parameterType="int" resultType="int">
+		select count(id) from
+		yc_house_tab where group_id
+		in(select area_id
+		from
+		cf_team_rel_area
+		where team_id=#{teamId})
+	</select>
+	<!-- 判断人员是否关联小区 -->
+	<select id="selectIfRelMember" parameterType="int" resultType="int">
+		select count(1)
+		from cf_team_member_area
+		where user_id=#{memberId}
+	</select>
+	<!-- 人员关联房源的数量 -->
+	<select id="selectMemberHCnt" parameterType="int" resultType="int">
+		select count(id)
+		from yc_house_tab where group_id
+		in(select area_id
+		from
+		cf_team_member_area
+		where user_id=#{memberId})
+	</select>
+	<!-- 判断是否是团队团队负责人，传入teamId是判断是否为该团队的负责人 -->
+	<select id="selectCharge" parameterType="int" resultType="int">
+		select
+		count(1) from cf_team
+		where leader_id=#{userId}
+		<if test="teamId>0">
+			and id=#{teamId}
+		</if>
+		and is_delete=0
+	</select>
+	<!-- 根据传入的团队名称，模糊匹配出符合要求的团队名称和id -->
+	<select id="selectTeamIdList" resultType="map">
+		select id teamId,name
+		teamName
+		from cf_team
+		where team_level=#{teamLevel}
+		and name like
+		concat('%',#{teamName},'%')
+	</select>
+	<!-- 找出这个团队的父团队id -->
+	<select id="selectParentTeamId" parameterType="int" resultType="map">
+		select parent_teamid,leader_id
+		from cf_team
+		where id=#{teamId} and
+		is_delete=0
+	</select>
+	<select id="selectTeamLevel" parameterType="int" resultType="int">
+		select team_level
+		from cf_team
+		where leader_id=#{userId}
+		and is_delete=0
+	</select>
+	<!-- 查询出它的团队id和leaderId -->
+	<select id="selectSubTeamIdsAndLeaderIds" parameterType="int"
+		resultType="map">
+		select id,leader_id from cf_team
+		where
+		parent_teamid=#{teamId}
+		and
+		is_delete=0
+	</select>
+	<select id="selectUniName" parameterType="String" resultType="int">
+		select count(1) from cf_team
+		<where>
+			<if test="0==0">
+				name=#{name} and is_delete=0
+			</if>
+			<if test="teamId>0">
+				and id!=#{teamId}
+			</if>
+		</where>
+	</select>
+	<insert id="insertTeam" parameterType="com.yc.rm.caas.appserver.model.team.TeamBean"
+		useGeneratedKeys="true" keyProperty="teamId">
+		insert into
+		cf_team(name,leader_id,parent_teamid,create_id,modify_id,modify_date,team_level)
+		values(#{teamName},#{leaderId},#{parentTeamId},#{createId},#{modifyId},now(),#{teamLevel})
+	</insert>
+	<!-- insert id="insertTeamRelation" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelation"> 
+		insert into cf_team_rel(team_id,user_id,top_teamid,if_charge) values(#{teamId},#{memberId},#{topTeamId},#{ifCharge}) 
+		</insert> -->
+	<update id="insertTeamRelation" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelation">
+		update cf_team_rel
+		set team_id=#{teamId},if_charge=#{ifCharge}
+		where user_id=#{memberId}
+		and top_teamid=#{topTeamId}
+	</update>
+	<insert id="insertAreaRel" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelHouse">
+		insert into
+		cf_team_rel_area(team_id,area_id,top_teamId)
+		values
+		(#{teamId},#{areaId},#{topTeamId})
+	</insert>
+	<insert id="insertMemberRelArea" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelation">
+		insert into
+		cf_team_member_area(team_id,user_id,top_teamid,area_id)
+		values
+		(#{teamId},#{memberId},#{topTeamId},#{areaId})
+	</insert>
+	<!-- 根据用户id删除关联表里的用户 -->
+	<update id="deleteTeamMember" parameterType="int">
+		update cf_team_rel
+		set
+		team_id=null
+		<where>
+			<if test="1==1">
+				team_id=#{teamId}
+			</if>
+			<if test="userId!=0 and userId!=null">
+				and user_id=#{userId}
+			</if>
+		</where>
+	</update>
+	<!-- 删除团队信息 -->
+	<update id="deleteTeam" parameterType="com.yc.rm.caas.appserver.model.team.TeamBean">
+		update cf_team
+		set is_delete=1,modify_date=now(),modify_id=#{modifyId}
+		<where>
+			<if test="leaderId==0">
+				id=#{teamId}
+			</if>
+			<if test="leaderId>0">
+				leader_id = #{leaderId}
+			</if>
+			<if test="1==1">
+				and is_delete=0
+			</if>
+		</where>
+	</update>
+	<!-- update id="deleteAreaRel" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelHouse"> 
+		update cf_team_rel_area set team_id =null <where> <if test="1==1"> team_id=#{teamId} 
+		</if> <if test="areaId!=0"> and area_id =#{areaId} </if> </where> </update> -->
+	<delete id="deleteAreaRel" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelHouse">
+		delete from cf_team_rel_area
+		<where>
+			<if test="1==1">
+				team_id=#{teamId}
+			</if>
+			<if test="areaId!=0">
+				and area_id =#{areaId}
+			</if>
+		</where>
+	</delete>
+	<!-- update id="deleteMemberRelAreaList" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelation"> 
+		update cf_team_member_area set team_id=null <where> <if test="1==1"> team_id=#{teamId} 
+		</if> <if test="areaId!=0"> and area_id =#{areaId} </if> <if test="memberId!=0"> 
+		and user_id=#{memberId} </if> </where> </update> -->
+	<delete id="deleteMemberRelAreaList" parameterType="com.yc.rm.caas.appserver.model.team.TeamRelation">
+		delete from cf_team_member_area
+		<where>
+			<if test="1==1">
+				team_id=#{teamId}
+			</if>
+			<if test="areaId!=0">
+				and area_id =#{areaId}
+			</if>
+			<if test="memberId!=0">
+				and user_id=#{memberId}
+			</if>
+		</where>
+	</delete>
+	<update id="updateTeamName" parameterType="com.yc.rm.caas.appserver.model.team.TeamBean">
+		update cf_team
+		set
+		name=#{teamName},modify_id=#{modifyId},modify_date=now()
+		where
+		id=#{teamId}
+		and is_delete=0
+	</update>
+	<update id="updateTeamCharge" parameterType="com.yc.rm.caas.appserver.model.team.TeamBean">
+		update cf_team
+		set
+		leader_id=#{newLeaderId},modify_id=#{modifyId},modify_date=now()
+		where
+		id=#{teamId} and is_delete=0
+	</update>
+	<update id="updateTeamRel" parameterType="com.yc.rm.caas.appserver.model.team.TeamBean">
+		update cf_team_rel
+		set team_id=#{teamId},if_charge=1
+		where user_id=#{newLeaderId}
+	</update>
+	<update id="updateChargeToNull" parameterType="com.yc.rm.caas.appserver.model.team.TeamBean">
+	  update cf_team_rel
+	  set team_id=null,if_charge=0
+	  where team_id=#{teamId} and user_id=#{leaderId}
+	</update>
+</mapper>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yc.rm.caas.appserver.base.login.dao.ILoginDao">
+
+	<!-- 查询用户信息 -->
+	<select id="selectUserInfo" parameterType="com.yc.rm.caas.appserver.model.user.User" 
+		resultType="com.sys.webframe.bus.user.entity.User">
+		select
+		a.id as "userId",
+		a.name as "userName",
+		a.passwd as "password",
+		a.mobile as "userPhone",
+		a.create_time as "createTime",
+		a.state as "state",
+		b.item_name as "stateName",
+		group_concat(distinct d.id) as "roleId",
+		group_concat(distinct d.name) as "roleName",
+		group_concat(distinct g.org_id) as "orgId", 
+		group_concat(distinct h.org_name) as "orgName",
+		f.id as "teamId",
+		e.top_teamid as "topTeamid",
+		f.name as "teamName" 
+		from yc_account_tab a
+		left join yc_dictionary_item b on a.state=b.item_id 
+		left join cf_userrole c on a.id=c.user_id 
+		left join cf_role d on c.role_id=d.id 
+		left join cf_team_rel e on a.id=e.user_id 
+		left join cf_team f on e.team_id=f.id 
+		left join yc_account_org_tab g on a.id=g.user_id 
+		left join yc_organization_tab h on g.org_id=h.org_id
+		<where>
+			a.mobile is not null and a.mobile!='' and a.is_delete=1 and b.group_id='ACCOUNT.STATE'
+			<![CDATA[and a.mobile>=0]]>
+			<if test="userPhone != null and userPhone != ''">
+				and a.mobile=#{userPhone}
+			</if>
+		</where>
+		group by a.id
+	</select>
+	
+	<update id="updateUserRegistrationId" parameterType="com.yc.rm.caas.appserver.model.user.User">
+		update yc_account_tab a
+		set a.registrationid = #{registrationId}
+		where id=#{userId}
+	</update>
+	
+	<!-- 插入登录日志 -->
+	<insert id="insertLoginLog" parameterType="map">
+		insert into yc_log_login(mobile,passwrod,logintime,islogin,heads,ip)
+		values(#{mobile},#{passwrod},now(),#{islogin},#{heads},#{ip})
+	</insert>
+	
+	<!-- 查询用的权限菜单 -->
+	<select id="selectUserMenuById" parameterType="com.yc.rm.caas.appserver.model.user.User" resultType="map">
+		SELECT a.isnext,
+		a.menu_id,
+		a.`menu_name`,
+		a.`menu_level`,
+		a.`menu_url`,
+		a.`order_id`,
+		a.`menu_ico`,
+		a.`super_id` 
+		FROM yc_menu_new_tab a,
+		yc_account_role_tab c,
+		yc_power_new_tab e,
+		yc_role_menu_tab f,
+		yc_role_new_tab g 
+		WHERE a.`menu_id` = e.`menu_id` AND e.`power_id` = f.`power_id` 
+		AND f.`role_id` = g.`role_id` AND g.`role_id` = c.`role_id` 
+		AND c.`user_id` =#{userId}  AND a.`state` = 1 AND c.`state` = 1 
+		AND e.`state` = 1  AND f.`state` = 1 AND g.`state` = 1 
+		GROUP BY a.isnext,a.menu_id,a.`menu_name`,a.`menu_level`,a.`menu_url`,a.`order_id`,a.`menu_ico`,a.`super_id` 
+		ORDER BY a.`super_id`,a.`order_id`	
+	</select>
+	
+</mapper>

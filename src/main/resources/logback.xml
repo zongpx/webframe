@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true" scan="true" scanPeriod="1 seconds">
+	<!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径 -->
+	<property name="file_name" value="wxweb" />
+	<property name="LOG_HOME" value="/logback/mp" />
+	<!-- 控制台输出 -->
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<!-- 日志输出编码 -->
+		<Encoding>UTF-8</Encoding>
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+			<pattern>%highlight(%date{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%logger{5600}.%method:%L] -%msg%n)
+			</pattern>
+		</layout>
+	</appender>
+
+	<!-- 按用户输出日志 -->
+	<appender name="SIFT_DEBUG" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter" >
+			<level>DEBUG</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<discriminator>
+			<Key>mobile_key</Key>
+			<Key>app_key</Key>
+			<DefaultValue>unknown</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-DEBUG-${userid}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <File>${LOG_HOME}/${app_key}/${file_name}_DEBUG.%d{yyyy-MM-dd}.log</File>
+				<Append>false</Append> -->
+				<Prudent>true</Prudent>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				   <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${file_name}_DEBUG.%d{yyyy-MM-dd}.log</FileNamePattern>
+				   <!-- keep 60 days worth of history --> 
+				   <MaxHistory>60</MaxHistory>
+				</rollingPolicy>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<Pattern>%d [%thread] %level %mdc %logger{35}[%L] - %msg%n
+					</Pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+
+	<!-- 按用户输出错误日志 -->
+	<appender name="SIFT_ERROR" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>ERROR</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<discriminator>
+			<Key>mobile_key</Key>
+			<Key>app_key</Key>
+			<DefaultValue>unknown</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-ERROR-${userid}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <File>${LOG_HOME}/${app_key}/${file_name}_ERROR.log</File>
+				<Append>false</Append>-->
+				<Prudent>true</Prudent>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				   <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${file_name}_ERROR.%d{yyyy-MM-dd}.log</FileNamePattern>
+				   <!-- keep 60 days worth of history --> 
+				   <MaxHistory>60</MaxHistory>
+				</rollingPolicy>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<Pattern>%d [%thread] %level %mdc %logger{35}[%L] - %msg%n
+					</Pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+	
+	<!-- 按用户输出info日志 -->
+	<appender name="SIFT_INFO" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>INFO</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<discriminator>
+			<Key>mobile_key</Key>
+			<Key>app_key</Key>
+			<DefaultValue>unknown</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-INFO-${userid}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <File>${LOG_HOME}/${app_key}/${file_name}_INFO.log</File>
+				<Append>false</Append> -->
+				<Prudent>true</Prudent>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				   <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${file_name}_INFO.%d{yyyy-MM-dd}.log</FileNamePattern>
+				   <!-- keep 60 days worth of history --> 
+				   <MaxHistory>60</MaxHistory>
+				</rollingPolicy>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<Pattern>%d [%thread] %level %mdc %logger{35}[%L] - %msg%n
+					</Pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+	
+	<!-- 按用户输出WARN日志 -->
+	<appender name="SIFT_WARN" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>WARN</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<discriminator>
+			<Key>mobile_key</Key>
+			<Key>app_key</Key>
+			<DefaultValue>unknown</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-WARN-${userid}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <File>${LOG_HOME}/${app_key}/${file_name}_WARN.log</File>
+				<Append>false</Append> -->
+				<Prudent>true</Prudent>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				   <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${file_name}_WARN.%d{yyyy-MM-dd}.log</FileNamePattern>
+				   <!-- keep 60 days worth of history --> 
+				   <MaxHistory>60</MaxHistory>
+				</rollingPolicy>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<Pattern>%d [%thread] %level %mdc %logger{35}[%L] - %msg%n
+					</Pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+	
+	<!-- 按用户输出trace日志 -->
+	<appender name="SIFT_TRACE" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>TRACE</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<discriminator>
+			<Key>mobile_key</Key>
+			<Key>app_key</Key>
+			<DefaultValue>unknown</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-TRACE-${userid}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <File>${LOG_HOME}/${app_key}/${file_name}_TRACE.log</File>
+				<Append>false</Append> -->
+				<Prudent>true</Prudent>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				   <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${file_name}_TRACE.%d{yyyy-MM-dd}.log</FileNamePattern>
+				   <!-- keep 60 days worth of history --> 
+				   <MaxHistory>60</MaxHistory>
+				</rollingPolicy>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<Pattern>%d [%thread] %level %mdc %logger{35}[%L] - %msg%n
+					</Pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+	
+	<!-- 支付日志单独记录日志 -->
+	<appender name="SIFT_PAY" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator>
+			<Key>mobile_key</Key>
+			<Key>app_key</Key>
+			<DefaultValue>unknown</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-PAY-${userid}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- <File>${LOG_HOME}/PAY/${app_key}/${file_name}_PAY.log</File>
+				<Append>false</Append> -->
+				<Prudent>true</Prudent>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+				   <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${file_name}_PAY.%d{yyyy-MM-dd}.log</FileNamePattern>
+				   <!-- keep 60 days worth of history --> 
+				   <MaxHistory>60</MaxHistory>
+				</rollingPolicy>
+				<layout class="ch.qos.logback.classic.PatternLayout">
+					<Pattern>%d ${mobile_key} [%thread] %level %mdc %logger{35}[%L] - %msg%n
+					</Pattern>
+				</layout>
+			</appender>
+		</sift>
+	</appender>
+	
+	<!-- <logger name="com.ycdc.web.server.JsSignService" level="all" addtivity="false" >
+		<appender-ref ref="SIFT_PAY" />
+	</logger> -->
+	
+	<logger name="org.springframework" level="ERROR" addtivity="false" >
+		<appender-ref ref="SIFT_ERROR" />
+	</logger>
+	<logger name="org.springframework" level="WARN" addtivity="false" >
+		<appender-ref ref="SIFT_WARN" />
+	</logger>
+	<logger name="org.mybatis.spring" level="ERROR" addtivity="false" >
+		<appender-ref ref="SIFT_ERROR" />
+	</logger>
+	<logger name="org.mybatis.spring" level="WARN" addtivity="false" >
+		<appender-ref ref="SIFT_WARN" />
+	</logger>
+	<logger name="org.apache" level="ERROR" addtivity="false" >
+		<appender-ref ref="SIFT_ERROR" />
+	</logger>
+	<logger name="org.apache" level="WARN" addtivity="false" >
+		<appender-ref ref="SIFT_WARN" />
+	</logger>
+	<logger name="org.quartz.core" level="ERROR" addtivity="false" >
+		<appender-ref ref="SIFT_ERROR" />
+	</logger>
+	<logger name="org.springframework.scheduling" level="ERROR" addtivity="false">
+		<appender-ref ref="SIFT_ERROR" />
+	</logger>
+	<logger name="org.springframework.scheduling" level="WARN" addtivity="false">
+		<appender-ref ref="SIFT_PAY" />
+	</logger>
+	<logger name="SIFT_DEBUG" level="DEBUG" addtivity="false">
+		<appender-ref ref="SIFT_DEBUG" />
+	</logger>
+	<logger name="SIFT_ERROR" level="ERROR" addtivity="false">
+		<appender-ref ref="SIFT_ERROR" />
+	</logger>
+	<logger name="SIFT_TRACE" level="TRACE" addtivity="false">
+		<appender-ref ref="SIFT_TRACE" />
+	</logger>
+	<logger name="SIFT_WARN" level="WARN" addtivity="false">
+		<appender-ref ref="SIFT_WARN" />
+	</logger>
+	<logger name="SIFT_INFO" level="INFO" addtivity="false">
+		<appender-ref ref="SIFT_INFO" />
+	</logger>
+	
+	<!-- 日志输出级别 -->
+	<root level="ALL">
+		<!-- <appender-ref ref="STDOUT"  /> -->
+		${logback.appender}
+		<appender-ref ref="SIFT_ERROR" />
+		<appender-ref ref="SIFT_DEBUG" />
+		<appender-ref ref="SIFT_INFO" />
+		<appender-ref ref="SIFT_WARN" />
+		<appender-ref ref="SIFT_TRACE" />
+	</root>
+
+</configuration>

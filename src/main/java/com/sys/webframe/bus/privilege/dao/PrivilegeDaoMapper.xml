@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yc.rm.caas.appserver.base.privilege.dao.IPrivilegeDao">
+	<!-- 平台管理员的角色id -->
+	<sql id="platformManagerRoleId">
+		1
+	</sql>
+	<sql id="parentTeamIdOfRootTeam">
+		0
+	</sql>
+	<!-- 一级菜单的父菜单id -->
+	<sql id="parentMenuIdOfRootMenu">
+		0
+	</sql>
+	<!-- 添加按钮 -->
+	<insert id="insertButtons" parameterType="java.util.List">
+		insert into cf_button(name,url,menu_id,seq,visible) 
+			values
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="" 
+				close="" 
+				separator=",">
+			(#{item.name, jdbcType=VARCHAR},#{item.url, jdbcType=VARCHAR},#{item.menu_id},(select case when max(seq) is null then 0 else max(seq) end as seq from cf_button b where b.menu_id=#{item.menu_id} order by b.menu_id)+1,#{item.visible})
+		</foreach>
+	</insert>
+	<!-- 删除按钮 -->
+	<delete id="deleteButtons" parameterType="java.util.List">
+		delete from cf_button 
+			where id in
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="(" 
+				close=")" 
+				separator=",">
+			 #{item}
+		</foreach>
+	</delete>
+	<!-- 修改按钮信息 -->
+	<update id="updateButton"> 
+		update cf_button b
+		<set>  
+        	<if test="name!= null ">  
+            	b.name = #{name},
+        	</if>  
+        	<if test="url!= null ">  
+           		b.url = #{url},
+        	</if>
+        	<if test="visible != null ">  
+            	b.visible = #{visible},
+        	</if>
+    	</set>
+		where b.id=#{id}
+	</update>
+	<!-- 批量更新菜单的可见性 -->
+	<update id="updateButtonsVisible" parameterType="java.util.List">
+		<foreach collection="list"
+				item="item" 
+				index="index" 
+				open=""
+				close=""
+				separator=";">
+			update cf_button 
+			set visible=#{item.visible}
+			where id=#{item.id}
+		</foreach>
+	</update>
+	<!-- 按钮批量排序 -->
+	<update id="updateAllButtonSeq" parameterType="java.util.List">
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="" 
+				close="" 
+				separator=";">
+			update cf_button 
+			<set>
+				seq=#{item.seq}
+			</set>
+			where id=#{item.id}
+		</foreach>
+	</update>
+	<!-- 获取button信息 -->
+	<select id="selectButtons" 
+			parameterType="java.util.List" 
+			resultType="com.yc.rm.caas.appserver.base.privilege.entity.Button">
+		select *
+		from cf_button 
+		where id in
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="(" 
+				close=")" 
+				separator=",">
+			#{item}
+		</foreach>
+	</select>
+	<!-- 获取菜单的按钮 -->
+	<select id="selectSubbuttonsByMenuId" parameterType="int" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Button">
+		select * 
+		from cf_button b
+		where b.menu_id = #{menuId}
+	</select>
+	<!-- 添加菜单 -->
+	<insert id="insertMenus" parameterType="java.util.List">
+		insert into cf_menu(name,url,parent_menu_id, seq,visible) 
+			values
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="" 
+				close="" 
+				separator=",">
+			(#{item.name, jdbcType=VARCHAR},
+					#{item.url, jdbcType=VARCHAR},#{item.parent_menu_id}, 
+					(select case when max(seq) is null then 0 else max(seq) end as seq from cf_menu m where m.parent_menu_id=#{item.parent_menu_id} order by m.parent_menu_id)+1,
+					#{item.visible})
+		</foreach>
+	</insert>
+	<!-- 删除菜单并级联删除子菜单和按钮 -->
+	<delete id="deleteMenus" parameterType="java.util.List">
+		delete from cf_menu 
+			where id in
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="(" 
+				close=")" 
+				separator=",">
+			#{item}
+		</foreach>
+	</delete>
+	<!-- 修改菜单信息 -->
+	<update id="updateMenu"> 
+		update cf_menu m
+		<set>  
+        	<if test="name!= null ">  
+            	m.name = #{name},  
+        	</if>  
+        	<if test="url!= null">  
+           		m.url = #{url},  	
+        	</if>  
+        	<if test="visible != null ">  
+            	m.visible = #{visible},  
+        	</if>  
+    	</set>
+		where m.id=#{id}
+	</update>
+	<!-- 批量更新菜单的可见性 -->
+	<update id="updateMenusVisible" parameterType="java.util.List">
+		<foreach collection="list"
+				item="item" 
+				index="index" 
+				open=""
+				close=""
+				separator=";">
+			update cf_menu 
+			set visible=#{item.visible}
+			where id=#{item.id}
+		</foreach>
+	</update>
+	<!-- 获取子菜单 -->
+	<select id="selectSubmenusByParentMenuId" parameterType="int" resultMap="pubmenu_map">
+		select * 
+		from cf_menu m
+		where m.parent_menu_id = #{parentId}
+		order by m.seq;
+	</select>
+	<resultMap id="pubmenu_map" type="com.yc.rm.caas.appserver.base.privilege.entity.Menu">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="isHave" property="isHave" />
+		<result column="url" property="url" />
+		<result column="parent_menu_id" property="parent_menu_id" />
+		<result column="seq" property="seq" />
+		<result column="visible" property="visible" />
+		<collection property="submenus" column="id" ofType="com.yc.rm.caas.appserver.base.privilege.entity.Menu" select="selectSubmenus">
+		</collection>
+		<collection property="buttons" column="id" ofType="com.yc.rm.caas.appserver.base.privilege.entity.Button" select="selectSubbuttons">
+		</collection>
+	</resultMap>
+	<resultMap id="menu_map" type="com.yc.rm.caas.appserver.base.privilege.entity.Menu">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="isHave" property="isHave" />
+		<result column="url" property="url" />
+		<result column="parent_menu_id" property="parent_menu_id" />
+		<result column="seq" property="seq" />
+		<result column="visible" property="visible" />
+		<collection property="submenus" column="{parentId=id,roleId=role_id}" ofType="com.yc.rm.caas.appserver.base.privilege.entity.Menu" select="selectSubmenus">
+		</collection>
+		<collection property="buttons" column="{menuId=id,roleId=role_id}" ofType="com.yc.rm.caas.appserver.base.privilege.entity.Button" select="selectSubbuttons">
+		</collection>
+	</resultMap>
+	<select id="selectSubmenus" parameterType="java.util.Map" resultMap="menu_map">
+		select distinct s.id, 
+				s.name,
+				case when s.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{roleId} and sp.access = 'menu_id') then s.url else '' end as url,
+				case when s.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{roleId} and sp.access = 'menu_id') then 1 else 0 end as isHave,
+				s.parent_menu_id,
+				s.seq,
+				s.visible,
+				#{roleId} as role_id
+		from (select *
+			from cf_menu m
+			where m.parent_menu_id = #{parentId}) s, cf_privilege p
+		where p.master = "role_id" and p.m_value = #{roleId} and p.access = "menu_id" and p.a_value = s.id and s.visible = 1 and p.oper = "enabled"
+		order by s.seq;
+	</select>
+	<select id="selectSubbuttons" parameterType="java.util.Map" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Button">
+		select s.id, 
+				s.name,
+				case when s.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{roleId} and sp.access = 'button_id') then s.url else '' end as url,
+				case when s.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{roleId} and sp.access = 'button_id') then 1 else 0 end as isHave,
+				s.menu_id,
+				s.seq,
+				s.visible		
+		from (select * 
+			from cf_button b
+			where b.menu_id = #{menuId}) s, cf_privilege p
+		where p.master = "role_id" and p.m_value = #{roleId} and p.access = "button_id" and p.a_value = s.id and s.visible = 1 and p.oper = "enabled"
+		order by s.seq;
+	</select>
+	<!-- 菜单批量排序 -->
+	<update id="updateAllMenuSeq" parameterType="java.util.List">
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="" 
+				close="" 
+				separator=";">
+			update cf_menu 
+			set seq=#{item.seq}
+			where id=#{item.id}
+		</foreach>
+	</update>
+	<!-- 获取Menu信息 -->
+	<select id="selectMenus" 
+			parameterType="java.util.List" 
+			resultType="com.yc.rm.caas.appserver.base.privilege.entity.Menu">
+		select * 
+		from cf_menu 
+		where id in 
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="(" 
+				close=")" 
+				separator=",">
+			#{item}
+		</foreach>
+	</select>
+	
+	<!-- 权限操作 -->
+	
+	<!-- 批量添加权限 -->
+	<insert id="insertPrivileges" parameterType="java.util.List">
+		insert into cf_privilege(master,m_value,access,a_value,oper)
+			values
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open="" 
+				close=""
+				separator=",">
+			(#{item.master},#{item.m_value},#{item.access},#{item.a_value},#{item.oper})
+		</foreach>
+	</insert>
+	<!-- 获取权限的数量 -->
+	<select id="selectCountOfPrivilege" resultType="int">
+		select count(1)
+		from cf_privilege
+		where master=#{master}
+		and m_value=#{m_value}
+		and access=#{access}
+		and a_value=#{a_value}
+	</select>
+	<!-- 批量删除权限 -->
+	<delete id="deletePrivilegesById" parameterType="java.util.List">
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open=""
+				close=""
+				separator=";">
+			delete from cf_privilege 
+			where id=#{item}
+		</foreach>
+	</delete>
+	<!-- 根据权限信息删除权限 -->
+	<delete id="deletePrivileges" parameterType="java.util.List">
+		<foreach collection="list" 
+				item="item" 
+				index="index" 
+				open=""
+				close=""
+				separator=";">
+			delete from cf_privilege 
+			where master = #{item.master} and m_value = #{item.m_value} and access = #{item.access} and a_value = #{item.a_value}
+		</foreach>
+	</delete>
+	<!-- 批量更新权限的状态 -->
+	<update id="updatePrivilegesOper" parameterType="java.util.List">
+		<foreach collection="list"
+				item="item" 
+				index="index" 
+				open=""
+				close=""
+				separator=";">
+			update cf_privilege 
+			set oper=#{item.oper}
+			where id=#{item.id}
+		</foreach>
+	</update>
+	<!-- 批量获取权限信息 -->
+	<select id="selectPrivileges" parameterType="java.util.List" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Privilege">
+		select *
+		from cf_privilege
+		where id in
+		<foreach collection="list"
+				item="item"
+				index="index"
+				open="("
+				close=")"
+				separator=",">
+			#{item}
+		</foreach>
+	</select>
+	<!-- 角色操作 -->
+	<!-- 批量添加角色 -->
+	<insert id="insertRole" keyProperty="id"  useGeneratedKeys="true" parameterType="java.util.List">
+		insert into cf_role(name,role_desc,create_id,modify_id,modify_date,team_id)
+			values(#{name},#{role_desc},#{create_id},#{modify_id},#{modify_date},#{team_id})
+	</insert>
+	<!-- 批量删除角色 -->
+	<delete id="deleteRoles" parameterType="java.util.List">
+		delete from cf_role
+		where id in
+		<foreach collection="list" 
+				item="item" 
+				index="index"
+				open="("
+				close=")"
+				separator=",">
+			#{item}
+		</foreach>
+	</delete>
+	<!-- 更新角色信息 -->
+	<update id="updateRole" parameterType="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		update cf_role
+		set
+		name = #{name},
+		role_desc = #{role_desc},
+		modify_id = #{modify_id},
+		modify_date = #{modify_date}
+		where id = #{id}
+	</update>
+	<!-- 获取角色数量 -->
+	<select id="selectCountOfRole" parameterType="int" resultType="int">
+		select count(1)
+		from cf_role
+		where id=#{role_id};
+	</select>
+	<!-- 给用户新分配角色 -->
+	<insert id="insertUserRoles" parameterType="java.util.List">
+		insert into cf_userrole(user_id,role_id,create_id,modify_id,modify_date)
+			values
+		<foreach collection="list" 
+				item="item" 
+				index="index"
+				open=""
+				close=""
+				separator=",">
+			(#{item.user_id},#{item.role_id},#{item.create_id},#{item.modify_id},#{item.modify_date})
+		</foreach>
+	</insert>
+	<!-- 删除用户的所有角色 -->
+	<delete id="deleteAllUserRoles" parameterType="int">
+		delete from cf_userrole
+		where user_id = #{user_id}
+	</delete>
+	<!-- 删除角色所有权限 -->
+	<delete id="deleteAllRolePrivileges" parameterType="int">
+		delete from cf_privilege
+		where master = "role_id" and m_value = #{role_id}
+	</delete>
+	<!-- 根据团队管理员id获取团队角色 -->
+	<select id="selectRolesByTeamId" parameterType="int" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		select *
+		FROM cf_role r
+		where r.team_id = #{team_id};
+	</select>
+	<!-- 根据团队名称、角色名称查询角色 -->
+	<select id="selectRoles" parameterType="com.yc.rm.caas.appserver.base.privilege.entity.RoleOption" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		select r.id,r.name,r.role_desc,r.create_id,r.modify_id,r.modify_date,r.team_id
+		FROM cf_role r, cf_team t,(select st.id from cf_team st where find_in_set(st.id, getTeamChildList(#{login_id}))) ts
+		<where>
+			r.team_id = t.id and ts.id = t.id and t.id = #{team_id}
+			<if test="role_name != null and role_name != ''">
+				and r.name like CONCAT('%',#{role_name},'%')
+			</if>
+		</where>
+	</select>
+	<!-- 根据团队名称、角色名称查询角色（管理员查询） -->
+	<select id="selectRolesOfPlatform" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		select r.id,r.name,r.role_desc,r.create_id,r.modify_id,r.modify_date,r.team_id
+		FROM cf_role r, cf_team t
+		<where>
+			<if test="team_name != null and team_name != ''">
+				r.team_id = t.id and t.name like concat('%',#{team_name},'%")
+			</if>
+			<if test="role_name != null and role_name != ''">
+				and r.name like concat('%',#{role_name},'%')
+			</if>
+		</where>
+	</select>
+	<!-- 查询用户角色 -->
+	<select id="selectUserRoles" parameterType="int" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		select r.id, r.name, r.role_desc, r.create_id, r.modify_id, r.modify_date, r.team_id
+		from cf_userrole u, cf_role r
+		where u.user_id = #{user_id} and u.role_id = r.id;
+	</select>
+	<resultMap id="role_map" type="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="role_desc" property="role_desc" />
+		<result column="create_id" property="create_id" />
+		<result column="modify_id" property="modify_id" />
+		<result column="modify_date" property="modify_date" />
+		<result column="team_id" property="team_id" />
+		<collection property="menus" column="id" ofType="com.yc.rm.caas.appserver.base.privilege.entity.Menu" select="selectMenuByRoleId">
+		</collection>
+	</resultMap>
+	<select id="selectMenuByRoleId" resultMap="menu_map">
+		select distinct s1.id,
+				s1.name,
+				case when s1.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{id} and sp.access = 'menu_id') then s1.url else '' end as url,
+				s1.parent_menu_id,
+				s1.seq,
+				s1.visible, 
+				#{id} as role_id,
+				case when s1.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{id} and sp.access = 'menu_id') then 1 else 0 end as isHave
+		from (select m.id, m.name, m.url, m.parent_menu_id,m.seq, m.visible
+			from cf_menu m
+			where m.parent_menu_id = <include refid="parentMenuIdOfRootMenu"></include>) s1, cf_privilege p
+		where p.master = "role_id" and p.m_value = #{id} and p.access = "menu_id" and p.a_value = s1.id
+		order by s1.seq
+	</select>
+	<!-- 根据角色id查询菜单(平台管理员) -->
+	<select id="selectAllMenuByRoleId" parameterType="int" resultMap="menu_map">
+		select s1.id,
+				s1.name,
+				case when s1.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{role_id} and sp.access = 'menu_id') then s1.url else '' end as url,
+				s1.parent_menu_id,
+				s1.visible, 
+				#{role_id} as role_id,
+				case when s1.id in(select sp.a_value as id from cf_privilege sp where sp.master = 'role_id' and sp. m_value = #{role_id} and sp.access = 'menu_id') then 1 else 0 end as isHave
+		from (
+			select m.id, m.name, m.url, m.parent_menu_id, m.visible
+			from cf_menu m
+			where m.parent_menu_id = <include refid="parentMenuIdOfRootMenu"></include>) s1
+			order by s1.seq
+	</select>
+	<!-- 查询角色的所有权限 -->
+	<select id="selectRolePrivilege" parameterType="int" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Privilege">
+		select * 
+		from cf_privilege p
+		where p.master = "role_id" and m_value = #{role_id}
+	</select>
+	<!-- 判断登录用户是否是团队管理员 -->
+	<select id="selectOperationManager" resultType="int">
+		select count(1) 
+		from cf_team t, cf_team_rel tr, cf_role r, cf_userrole ur
+		<!-- 暂时假定平台管理员的角色id为1 -->
+		<!-- 判断是否是平台管理员或团队管理员 -->
+		<where>
+			(tr.user_id = #{login_id} 
+			and tr.team_id = t.id 
+			and t.leader_id = #{login_id}) 
+			or
+			 (tr.team_id = r.team_id 
+			and ur.role_id = r.id 
+			and ur.user_id = #{login_id} 
+			and r.id = <include refid="platformManagerRoleId"></include>)
+		</where>
+	</select>
+	<!-- 判断登录用户是否是管理员 -->
+	<select id="selectPlatFormManager" resultType="int">
+		select count(1)
+		from cf_team t, cf_team_rel tr, cf_role r, cf_userrole ur
+		<!-- 判断是否是平台管理员 -->
+		<where>
+			tr.team_id = r.team_id 
+			and ur.role_id = r.id 
+			and ur.user_id = #{login_id} 
+			and r.id = <include refid="platformManagerRoleId"></include>
+		</where>
+	</select>
+	<!-- 判断用户是否是团队成员 -->
+	<select id="selectTeamMemberByUserId" resultType="Int">
+		select count(1)
+		from cf_team_rel tr, (select id from cf_team where find_in_set(id, getTeamChildList(#{login_id}))) t
+		where tr.team_id = t.id and tr.user_id = #{user_id}
+	</select>
+	
+	<!-- 获取用户团队及子团队信息 -->
+	<select id="selectTeamByUserId" parameterType="int" resultMap="team_map">
+		select t.id,t.name,t.leader_id,t.parent_teamid,t.create_id,t.modify_id,t.modify_date
+		from cf_team t, cf_team_rel tr
+		<where>
+			tr.user_id = #{user_id} and tr.team_id = t.id and tr.is_delete = 0
+		</where> 
+	</select>
+	<!-- 查询所有团队 -->
+	<select id="selectAllTeams" resultMap="team_map">
+		select t.id,t.name,t.leader_id,t.parent_teamid,t.create_id,t.modify_id,t.modify_date
+		from cf_team t
+		<where>
+			t.parent_teamid = <include refid="parentTeamIdOfRootTeam"></include>
+		</where> 
+	</select>
+	<resultMap id="team_map" type="com.yc.rm.caas.appserver.model.team.TeamBean">
+		<id column="id" property="teamId" />
+		<result column="name" property="teamName" />
+		<result column="leader_id" property="leaderId" />
+		<result column="parent_teamid" property="parentTeamId" />
+		<result column="create_id" property="createId" />
+		<result column="modify_id" property="modifyId" />
+		<result column="modify_date" property="modifyDate" />
+		<collection property="subTeams" column="id" ofType="com.yc.rm.caas.appserver.model.team.TeamBean" select="selectSubTeamsById">
+		</collection>
+	</resultMap>
+	<!-- 查询子团队信息 -->
+	<select id="selectSubTeamsById" parameterType="int" resultMap="team_map">
+		select * 
+		from cf_team t
+		where t.parent_teamid = #{id}
+	</select>
+	<!-- 校验用户是否有角色的操作权限 -->
+	<select id="selectOperationRole" resultType="int">
+		select count(1)
+		from cf_role r, (select t1.id from cf_team t1 where find_in_set(t1.id, getTeamChildList(#{login_id}))) t 
+		where r.team_id = t.id and r.id = #{role_id} and exists (select id from cf_team t2, cf_team_rel tr where t2.parent_teamid = -1 and t2.leader_id = #{login_id} and tr.team_id = t2.id and tr.user_id = login_id);
+	</select>
+	<!-- 校验用户是否有团队的操作权限 -->
+	<select id="selectOperationTeam" resultType="int">
+		select count(1)
+		from (select id
+			from cf_team 
+			where find_in_set(id, getTeamChildList(#{login_id}))) t
+		where t.id = #{team_id};
+	</select>
+	<select id="selectCountOfRoleByName" parameterType="String" resultType="int">
+		select count(1) from cf_role r where r.name = #{name};
+	</select>
+	<!-- 查询所有角色权限信息 -->
+	<select id="selectAllRoles" resultMap="role_map">
+		select r.id, r.name, r.role_desc, r.create_id, r.modify_id, r.modify_date, r.team_id
+		from cf_role r;
+	</select>
+	<!-- 获取角色信息 -->
+	<select id="selectRoleById" parameterType="int" resultType="com.yc.rm.caas.appserver.base.privilege.entity.Role">
+		select r.id, r.name, r.role_desc, r.create_id, r.modify_id, r.modify_date, r.team_id
+		from cf_role r
+		where r.id = #{roleId};
+	</select>
+</mapper>
+
+
+
+

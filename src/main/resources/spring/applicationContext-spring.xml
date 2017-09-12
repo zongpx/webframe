@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans>
+	<context:annotation-config />
+	<aop:aspectj-autoproxy />
+	<!-- 配置around增强 -->
+	<bean id="myAdvice"
+		class="com.yc.rm.caas.appserver.base.interceptor.WebRequestAroundAdvice" />
+	<!--引入配置文件 -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="classpath:jdbc.properties" />
+	</bean>
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<!--初始化连接大小 -->
+		<property name="initialSize" value="${jdbc.initialSize}" />
+		<!--连接池最大数量 -->
+		<property name="maxActive" value="${jdbc.maxActive}" />
+		<!--连接池最大空闲 -->
+		<property name="maxIdle" value="${jdbc.maxIdle}" />
+		<!--连接池最小空闲 -->
+		<property name="minIdle" value="${jdbc.minIdle}" />
+		<!--获取连接最大等待时间 -->
+		<property name="maxWait" value="${jdbc.maxWait}" />
+	</bean>
+	<!-- spring session redis -->
+	<bean
+		class="org.springframework.session.data.redis.config.annotation.web.http.RedisHttpSessionConfiguration" />
+	<bean
+		class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+		<property name="hostName" value="118.178.126.121" />
+		<property name="password" value="lunatica" />
+		<property name="port" value="6379" />
+		<property name="database" value="10" />
+	</bean>
+	<!-- 开启事务注解驱动 -->
+	<tx:annotation-driven />
+	<bean
+		class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor" />
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<!-- 拦截器方式配置事物 -->
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="add*" />
+			<tx:method name="save*" rollback-for="Exception" />
+			<tx:method name="update*" rollback-for="Exception" />
+			<tx:method name="modify*" rollback-for="Exception" />
+			<tx:method name="edit*" rollback-for="Exception" />
+			<tx:method name="delete*" rollback-for="Exception" />
+			<tx:method name="remove*" rollback-for="Exception" />
+			<tx:method name="repair" rollback-for="Exception" />
+			<tx:method name="*WithTrans" propagation="REQUIRED"
+				rollback-for="Exception" />
+			<tx:method name="deleteAndRepair" />
+			<tx:method name="get*" propagation="SUPPORTS" />
+			<tx:method name="find*" propagation="SUPPORTS" />
+			<tx:method name="load*" propagation="SUPPORTS" />
+			<tx:method name="search*" propagation="SUPPORTS" />
+			<tx:method name="datagrid*" propagation="SUPPORTS" />
+			<tx:method name="*" propagation="REQUIRED" />
+		</tx:attributes>
+	</tx:advice>
+	<aop:config>
+		<!-- 第一个*代表任何返回值 -->
+		<!-- rml.serv..*Impl:代表你要拦截rml.serv..*Impl类 -->
+		<!-- .*(..)：这个代表任意方法，就是说上面那些类的任意方法，()里面的点，代表任意参数 -->
+		<!-- pointcut代表切面在哪里 -->
+		<aop:pointcut id="transactionPointcut" expression="execution(* com..serv.impl.*.*(..))" />
+		<!-- advisor代表在切面上要如何操作，该项目中是按照上面配置的transactionAdvice执行操作 -->
+		<aop:advisor pointcut-ref="transactionPointcut"
+			advice-ref="transactionAdvice" />
+	</aop:config>
+	<!-- 编程式事务管理 -->
+	<bean id="transactionTemplate"
+		class="org.springframework.transaction.support.TransactionTemplate">
+		<property name="transactionManager" ref="transactionManager" />
+	</bean>
+	<!--spring和MyBatis完美整合，不需要mybatis的配置映射文件 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!--自动扫描mapping.xml文件 -->
+		<property name="mapperLocations" value="classpath*:**/dao/**/*.xml" />
+	</bean>
+</beans>
